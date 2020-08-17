@@ -144,5 +144,6 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser'
     ],
+    'EXCEPTION_HANDLER': 'api.exception.exception_handler'
 }
 

@@ -1,63 +1,128 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views import View
-from .models import Book,User
+from .models import Book,User,Books,Publish,AuthorDetail,Author
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.settings import APISettings
 from . import serializers
 
-class BookView(View):
+# class BookView(View):
+#     def get(self, request, *args, **kwargs):
+#         pk = kwargs.get('pk')
+#         if not pk:  # 群查
+#             book_obj_list = Book.objects.all()
+#             book_list = []
+#             for obj in book_obj_list:
+#                 dic = {}
+#                 dic['title'] = obj.title
+#                 dic['price'] = obj.price
+#                 book_list.append(dic)
+#             return JsonResponse({
+#                 'status': 0,
+#                 'msg': 'ok',
+#                 'result': book_list
+#             }, json_dumps_params={'ensure_ascii': False})
+#         else:
+#             book_dic = Book.objects.filter(pk=pk).values('title', 'price').first()
+#             if book_dic:
+#                 return JsonResponse({
+#                     'status': 0,
+#                     'msg': 'ok',
+#                     'result': book_dic
+#                 }, json_dumps_params={'ensure_ascii': False})
+#             else:
+#                 return JsonResponse({
+#                     'status': 1,
+#                     'msg': 'fail',
+#                 }, json_dumps_params={'ensure_ascii': False})
+#         # return JsonResponse('get_ok', safe=False)
+#     def post(self, request, *args, **kwargs):
+#         print(request.POST.dict())
+#         try:
+#             book_obj = Book.objects.create(**request.POST.dict())
+#             # print(book_obj)
+#             if book_obj:
+#                 return JsonResponse({
+#                     'status': 0,
+#                     'msg': 'ok',
+#                     'results': {'title': book_obj.title, 'price': book_obj.price}
+#                 }, json_dumps_params={'ensure_ascii': False})
+#         except:
+#             return JsonResponse({
+#                 'status': 1,
+#                 'msg': '参数错误',
+#             }, json_dumps_params={'ensure_ascii': False})
+#
+#         return JsonResponse({
+#             'status': 2,
+#             'msg': '新增失败',
+#         }, json_dumps_params={'ensure_ascii': False})
+class BookView(APIView):
     def get(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
-        if not pk:  # 群查
-            book_obj_list = Book.objects.all()
-            book_list = []
-            for obj in book_obj_list:
-                dic = {}
-                dic['title'] = obj.title
-                dic['price'] = obj.price
-                book_list.append(dic)
-            return JsonResponse({
-                'status': 0,
-                'msg': 'ok',
-                'result': book_list
-            }, json_dumps_params={'ensure_ascii': False})
-        else:
-            book_dic = Book.objects.filter(pk=pk).values('title', 'price').first()
-            if book_dic:
-                return JsonResponse({
+        if pk:
+            try:
+                book_obj = Books.objects.get(pk=pk, is_deleted=False)
+                book_data = serializers.BookModelSerializers(book_obj).data
+                return Response({
                     'status': 0,
                     'msg': 'ok',
-                    'result': book_dic
-                }, json_dumps_params={'ensure_ascii': False})
-            else:
-                return JsonResponse({
+                    'results': book_data
+                })
+            except:
+                return Response({
                     'status': 1,
-                    'msg': 'fail',
-                }, json_dumps_params={'ensure_ascii': False})
-        # return JsonResponse('get_ok', safe=False)
+                    'msg': '书籍不存在'
+                })
+        else:
+            book_query = Books.objects.filter(is_deleted=False).all()
+            book_data = serializers.BookModelSerializers(book_query, many=True).data
+        return Response({
+            'status': 1,
+            'msg': '书籍不存在',
+            'results': book_data
+        })
+
     def post(self, request, *args, **kwargs):
-        print(request.POST.dict())
-        try:
-            book_obj = Book.objects.create(**request.POST.dict())
-            # print(book_obj)
-            if book_obj:
-                return JsonResponse({
+        request_data = request.data
+        book_ser = serializers.BookModelDeserializers(data=request_data)
+        # 当校验失败，马上终止当前视图方法，抛异常返回给前台
+        book_ser.is_valid(raise_exception=True)
+        book_obj = book_ser.save()
+        return Response({
+            'status': 0,
+            'msg': 'ok',
+            'results': serializers.BookModelSerializers(book_obj).data
+        })
+
+class PublishView(APIView):
+    def get(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        if pk:
+            try:
+                publish_obj = Publish.objects.get(pk=pk, is_deleted=False)
+                publish_data = serializers.PublishModelSerializers(publish_obj).data
+                return Response({
                     'status': 0,
                     'msg': 'ok',
-                    'results': {'title': book_obj.title, 'price': book_obj.price}
-                }, json_dumps_params={'ensure_ascii': False})
-        except:
-            return JsonResponse({
-                'status': 1,
-                'msg': '参数错误',
-            }, json_dumps_params={'ensure_ascii': False})
+                    'results': publish_data
+                })
+            except:
+                return Response({
+                    'status': 1,
+                    'msg': '出版社不存在'
+                })
+        else:
+            publish_query = Publish.objects.filter(is_deleted=False).all()
+            publish_data = serializers.PublishModelSerializers(publish_query, many=True).data
+        return Response({
+            'status': 1,
+            'msg': '出版社不存在',
+            'results': publish_data
+        })
 
-        return JsonResponse({
-            'status': 2,
-            'msg': '新增失败',
-        }, json_dumps_params={'ensure_ascii': False})
+
 
 from rest_framework.parsers import JSONParser,MultiPartParser,FormParser
 class Test(APIView):

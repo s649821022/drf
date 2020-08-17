@@ -7,8 +7,9 @@
 
 from . import views
 from rest_framework import serializers,exceptions
+from rest_framework.serializers import ModelSerializer
 from django.conf import settings
-from .models import User
+from .models import User,Books,Publish
 
 # 序列化组件为每个model类通过一套序列化工具类
 # 序列化组件的工作方式与django forms非常相似
@@ -93,3 +94,57 @@ class UserDelSerializers(serializers.Serializer):
 # 2）为需要额外校验的字段提供局部钩子函数，如果该字段不入库，且不参与全局钩子校验，可以将值取出校验
 # 3）为有联合关系的字段们提供全局钩子函数，如果某些字段不入库，可以将值取出校验
 # 4）重写create方法，完成校验通过的数据入库工作，得到新增的对象
+
+class PublishModelSerializers(ModelSerializer):
+
+    class Meta:
+        model = Publish
+        fields = ('name', 'address')
+
+class BookModelSerializers(ModelSerializer):
+
+    publish = PublishModelSerializers()
+
+    class Meta:
+        # 序列化类关联的model类型
+        model = Books
+        fields = ('name', 'price', 'author_list', 'publish')
+        # fields = '__all__'
+        # exclude = ('id', 'is_deleted', 'create_time')
+
+        depth = 1  # 自动连表深度
+
+class BookModelDeserializers(ModelSerializer):
+
+    class Meta:
+        model = Books
+        # 有默认值的字段不用
+        fields = ('name', 'price', 'publish', 'authors')
+        # extra_kwargs 用来完成反序列化字段的 系统校验规则
+        extra_kwargs = {
+            'name': {
+                'required': True,
+                'min_length': 1,
+                'error_messages': {
+                    'required': '必填项',
+                    'min_length': '太短'
+                }
+            }
+        }
+
+    def validate_name(self, value):
+        # 重复的书名判断
+        # if Books.objects.filter(name=value):
+        #     raise exceptions.ValidationError('书名已存在')
+        # 书名不能包含g字符
+        if 'g' in value.lower():
+            raise exceptions.ValidationError('该书不能出版')
+        return value
+
+    def validate(self, attrs):
+        publish = attrs.get("publish")
+        name = attrs.get('name')
+        if Books.objects.filter(name=name, publish=publish):
+            raise exceptions.ValidationError('该书已存在')
+        return attrs
+    

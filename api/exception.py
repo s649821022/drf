@@ -13,7 +13,6 @@ def exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
     if response is None:
         print("{} - {} - {}") % (context['view'], context['request'].method, exc)
-
         return Response({
             'detail': '服务器错误'
         }, status=HTTP_200_OK, headers={})
