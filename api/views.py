@@ -217,3 +217,5 @@ class UserView(APIView):
 # 1)book_ser = serializers.UserDelSerializers(data=request_data)  # 数据必须赋值给data
 # 2)book_ser.is_valid()  # 结果为 通过 | 不通过
 # 3)不通过返回book_ser.errors给前台，通过book_ser.save() 得到新增的对象，再正常返回
+
+#
