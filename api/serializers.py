@@ -147,4 +147,4 @@ class BookModelDeserializers(ModelSerializer):
         if Books.objects.filter(name=name, publish=publish):
             raise exceptions.ValidationError('该书已存在')
         return attrs
-    
+
