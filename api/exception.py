@@ -12,7 +12,7 @@ from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR, HTTP_200_OK
 def exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
     if response is None:
-        print("{} - {} - {}") % (context['view'], context['request'].method, exc)
+        # print("{} - {} - {}") % (context['view'], context['request'].method, exc)
         return Response({
             'detail': '服务器错误'
         }, status=HTTP_200_OK, headers={})

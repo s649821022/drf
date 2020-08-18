@@ -63,13 +63,8 @@ class BookView(APIView):
         pk = kwargs.get('pk')
         if pk:
             try:
-                book_obj = Books.objects.get(pk=pk, is_deleted=False)
-                book_data = serializers.BookModelSerializers(book_obj).data
-                return Response({
-                    'status': 0,
-                    'msg': 'ok',
-                    'results': book_data
-                })
+                book_obj = Books.objects.get(pk=pk, is_deleted=False)  # 查出来的对象
+                book_data = serializers.BookModelSerializers(book_obj).data  #
             except:
                 return Response({
                     'status': 1,
@@ -79,14 +74,14 @@ class BookView(APIView):
             book_query = Books.objects.filter(is_deleted=False).all()
             book_data = serializers.BookModelSerializers(book_query, many=True).data
         return Response({
-            'status': 1,
-            'msg': '书籍不存在',
+            'status': 0,
+            'msg': 'ok',
             'results': book_data
         })
 
     def post(self, request, *args, **kwargs):
         request_data = request.data
-        book_ser = serializers.BookModelDeserializers(data=request_data)
+        book_ser = serializers.BookModelSerializers(data=request_data)
         # 当校验失败，马上终止当前视图方法，抛异常返回给前台
         book_ser.is_valid(raise_exception=True)
         book_obj = book_ser.save()
@@ -94,6 +89,48 @@ class BookView(APIView):
             'status': 0,
             'msg': 'ok',
             'results': serializers.BookModelSerializers(book_obj).data
+        })
+
+class V2BookView(APIView):
+    def get(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        if pk:
+            try:
+                book_obj = Books.objects.get(pk=pk, is_deleted=False)  # 查出来的对象
+                book_data = serializers.V2BookModelSerializers(book_obj).data  #
+            except:
+                return Response({
+                    'status': 1,
+                    'msg': '书籍不存在'
+                })
+        else:
+            book_query = Books.objects.filter(is_deleted=False).all()
+            book_data = serializers.V2BookModelSerializers(book_query, many=True).data
+        return Response({
+            'status': 0,
+            'msg': 'ok',
+            'results': book_data
+        })
+
+    def post(self, request, *args, **kwargs):
+        request_data = request.data
+        if isinstance(request_data, dict):
+            many = False
+        elif isinstance(request_data, list):
+            many = True
+        else:
+            return Response({
+                'status': 1,
+                'msg': '数据有误',
+            })
+        book_ser = serializers.V2BookModelSerializers(data=request_data, many=many)
+        # 当校验失败，马上终止当前视图方法，抛异常返回给前台
+        book_ser.is_valid(raise_exception=True)
+        book_result = book_ser.save()
+        return Response({
+            'status': 0,
+            'msg': 'ok',
+            'results': book_ser.data
         })
 
 class PublishView(APIView):

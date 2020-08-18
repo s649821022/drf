@@ -14,6 +14,10 @@ app_name = 'api'
 urlpatterns = [
     path('books/', views.BookView.as_view()),
     url(r'^books/(?P<pk>.*)/$', views.BookView.as_view()),
+
+    path('v2/books/', views.V2BookView.as_view()),
+    url(r'^v2/books/(?P<pk>.*)/$', views.V2BookView.as_view()),
+
     path('publishes/', views.PublishView.as_view()),
     url(r'^publishes/(?P<pk>.*)/$', views.PublishView.as_view()),
     path('users/', views.UserView.as_view()),

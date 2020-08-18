@@ -111,7 +111,6 @@ class BookModelSerializers(ModelSerializer):
         fields = ('name', 'price', 'author_list', 'publish')
         # fields = '__all__'
         # exclude = ('id', 'is_deleted', 'create_time')
-
         depth = 1  # 自动连表深度
 
 class BookModelDeserializers(ModelSerializer):
@@ -148,4 +147,61 @@ class BookModelDeserializers(ModelSerializer):
             raise exceptions.ValidationError('该书已存在')
         return attrs
 
-#
+
+"""
+序列化反序列化整合
+1)fields中设置了所有的序列化和反序列化字段
+2）extra_kwargs划分只序列化或只反序列化字段
+    write_only：只反序列化
+    read_only：只序列化
+    自定义字段默认只序列化（read_only）
+3）设置反序列化所需的系统、局部钩子、全局钩子、等校验规则
+"""
+class V2BookModelSerializers(ModelSerializer):
+
+    class Meta:
+        model = Books
+        fields = ('publish', 'authors', 'name', 'price', 'img', 'author_list', 'publish_name')
+        extra_kwargs = {
+            'name': {
+                'required': True,
+                'min_length': 1,
+                'error_messages': {
+                    'required': '必填项',
+                    'min_length': '太短'
+                }
+            },
+            'publish': {
+                'write_only': True
+            },
+            'authors': {
+                'write_only': True
+            },
+            'author_list': {
+                'read_only': True
+            },
+            'publish_name': {
+                'read_only': True
+            },
+            'img': {
+                'read_only': True
+            }
+        }
+
+    def validate_name(self, value):
+        # 重复的书名判断
+        # if Books.objects.filter(name=value):
+        #     raise exceptions.ValidationError('书名已存在')
+        # 书名不能包含g字符
+        if 'g' in value.lower():
+            raise exceptions.ValidationError('该书不能出版')
+        return value
+
+    def validate(self, attrs):
+        publish = attrs.get("publish")
+        name = attrs.get('name')
+        if Books.objects.filter(name=name, publish=publish):
+            raise exceptions.ValidationError('该书已存在')
+        return attrs
+
+
