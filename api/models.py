@@ -106,7 +106,6 @@ class AuthorDetail(BaseModel):
     def __str__(self):
         return '{}的详情'.format(self.author.name)
 
-#
 
 
 

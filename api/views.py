@@ -130,8 +130,41 @@ class V2BookView(APIView):
         return Response({
             'status': 0,
             'msg': 'ok',
-            'results': book_ser.data
+            'results': serializers.V2BookModelSerializers(book_result, many=many).data
         })
+
+    # 单删
+    # 群删
+    def delete(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        if pk:
+            pks = [pk]
+        else:
+            pks = request.data.get('pks')
+        if Books.objects.filter(pk__in=pks, is_deleted=False).update(is_deleted=True):
+            return Response({
+                'status': 0,
+                'msg': '删除成功'
+            })
+        return Response({
+            'status': 1,
+            'msg': '删除失败'
+        })
+
+    def put(self, request, *args, **kwargs):
+        # 单群改
+        request_data = request.data
+        pk = kwargs.get('pk')
+        old_book_obj = Books.objects.filter(pk=pk).first()
+        book_ser = serializers.V2BookModelSerializers(instance=old_book_obj, data=request_data)
+        book_ser.is_valid(raise_exception=True)
+        book_obj = book_ser.save()
+        return Response({
+            'status': 0,
+            'msg': 'ok',
+            'results': serializers.V2BookModelSerializers(book_obj).data
+        })
+
 
 class PublishView(APIView):
     def get(self, request, *args, **kwargs):
