@@ -151,20 +151,81 @@ class V2BookView(APIView):
             'msg': '删除失败'
         })
 
-    def put(self, request, *args, **kwargs):
-        # 单群改
+    # 单整体该，对v2/books/(pk)传的数据是与model对应的字典name|price|publish|authors
+    # def put(self, request, *args, **kwargs):
+    #     # 单群改
+    #     request_data = request.data
+    #     pk = kwargs.get('pk')
+    #     old_book_obj = Books.objects.filter(pk=pk).first()
+    #     # 目的：将众多数据的校验交给序列化类来处理 - 让序列化类扮演反序列化角色，校验成功后，序列化类来帮你入库
+    #     book_ser = serializers.V2BookModelSerializers(instance=old_book_obj, data=request_data)
+    #     book_ser.is_valid(raise_exception=True)
+    #     book_obj = book_ser.save()
+    #     return Response({
+    #         'status': 0,
+    #         'msg': 'ok',
+    #         'results': serializers.V2BookModelSerializers(book_obj).data
+    #     })
+    #
+    # def patch(self, request, *args, **kwargs):
+    #     # 单局部改
+    #     request_data = request.data
+    #     pk = kwargs.get('pk')
+    #     old_book_obj = Books.objects.filter(pk=pk).first()
+    #     book_ser = serializers.V2BookModelSerializers(instance=old_book_obj, data=request_data, partial=True)
+    #     book_ser.is_valid(raise_exception=True)
+    #     book_obj = book_ser.save()
+    #     return Response({
+    #         'status': 0,
+    #         'msg': 'ok',
+    #         'results': serializers.V2BookModelSerializers(book_obj).data
+    #     })
+
+    """
+    1)单体整体修改
+    V2BookModelSerializers(
+    instance=要被更新的对象，
+    data=要更新的数据，
+    partial=默认False，必须的字段全部参与校验
+    )
+    2)单体局部修改
+    V2BookModelSerializers(
+    instance=要被更新的对象，
+    data=要更新的数据，
+    partial=True，必须的字段都变为选填字段
+    )
+    注: partial设置True的本质就是使字段  required=True  校验规则失效
+    """
+
+    # 群体整改和群体局部改, 群改的数据格式化成pks=[要需要的对象主键标识] | request_Data=[每个要修改对象对应的修改数据]
+    def patch(self, request, *args, **kwargs):
         request_data = request.data
         pk = kwargs.get('pk')
-        old_book_obj = Books.objects.filter(pk=pk).first()
-        book_ser = serializers.V2BookModelSerializers(instance=old_book_obj, data=request_data)
-        book_ser.is_valid(raise_exception=True)
-        book_obj = book_ser.save()
+        if pk and isinstance(request_data, dict):  # 单改
+            pks = [pk]
+            request_data = [request_data]
+        elif not pk and isinstance(request_data, list):  # 群改
+            pks = []
+            for dic in request_data:
+                pk = dic.pop("pk", None)
+                if pk:
+                    pks.append(pk)
+                else:
+                    return Response({
+                        'status': 1,
+                        'msg': '数据有误'
+                    })
+        else:
+            return Response({
+                'status': 1,
+                'msg': '数据有误'
+            })
+        print(pks)
+        print(request_data)
         return Response({
             'status': 0,
-            'msg': 'ok',
-            'results': serializers.V2BookModelSerializers(book_obj).data
+            'msg': 'put ok'
         })
-
 
 class PublishView(APIView):
     def get(self, request, *args, **kwargs):
