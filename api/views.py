@@ -152,20 +152,20 @@ class V2BookView(APIView):
         })
 
     # 单整体该，对v2/books/(pk)传的数据是与model对应的字典name|price|publish|authors
-    # def put(self, request, *args, **kwargs):
-    #     # 单群改
-    #     request_data = request.data
-    #     pk = kwargs.get('pk')
-    #     old_book_obj = Books.objects.filter(pk=pk).first()
-    #     # 目的：将众多数据的校验交给序列化类来处理 - 让序列化类扮演反序列化角色，校验成功后，序列化类来帮你入库
-    #     book_ser = serializers.V2BookModelSerializers(instance=old_book_obj, data=request_data)
-    #     book_ser.is_valid(raise_exception=True)
-    #     book_obj = book_ser.save()
-    #     return Response({
-    #         'status': 0,
-    #         'msg': 'ok',
-    #         'results': serializers.V2BookModelSerializers(book_obj).data
-    #     })
+    def put(self, request, *args, **kwargs):
+        # 单群改
+        request_data = request.data
+        pk = kwargs.get('pk')
+        old_book_obj = Books.objects.filter(pk=pk).first()
+        # 目的：将众多数据的校验交给序列化类来处理 - 让序列化类扮演反序列化角色，校验成功后，序列化类来帮你入库
+        book_ser = serializers.V2BookModelSerializers(instance=old_book_obj, data=request_data)
+        book_ser.is_valid(raise_exception=True)
+        book_obj = book_ser.save()
+        return Response({
+            'status': 0,
+            'msg': 'ok',
+            'results': serializers.V2BookModelSerializers(book_obj).data
+        })
     #
     # def patch(self, request, *args, **kwargs):
     #     # 单局部改
@@ -220,11 +220,33 @@ class V2BookView(APIView):
                 'status': 1,
                 'msg': '数据有误'
             })
-        print(pks)
-        print(request_data)
+
+        # pks与request_data数据筛选
+        # 1）将pks中的没有对应数据的pk与数据已删除的pk删除，request_data对应索引位上的数据也删除
+        # 2）将合理的pks转换为objs
+
+        objs = []
+        new_request_data = []
+        for index, pk in enumerate(pks):
+            try:
+                # pk对应的数据合理，将合理的对象存储
+                obj = Books.objects.get(pk=pk, is_deleted=False)
+                objs.append(obj)
+                # 对应的索引数据就保存下来
+                new_request_data.append(request_data[index])
+            except:
+                # pk对应的数据有误，将对应索引的data中的request_data删除
+                continue
+
+
+        book_ser = serializers.V2BookModelSerializers(instance=objs, data=new_request_data, partial=True, many=True)
+        book_ser.is_valid(raise_exception=True)
+        book_objs = book_ser.save()
+
         return Response({
             'status': 0,
-            'msg': 'put ok'
+            'msg': 'ok',
+            'results': serializers.V2BookModelSerializers(book_objs, many=True).data
         })
 
 class PublishView(APIView):

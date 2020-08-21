@@ -157,6 +157,18 @@ class BookModelDeserializers(ModelSerializer):
     自定义字段默认只序列化（read_only）
 3）设置反序列化所需的系统、局部钩子、全局钩子、等校验规则
 """
+from rest_framework.serializers import ListSerializer
+# 重点：ListSerializer与ModelSerializer建立关联的是：
+# ModelSerializer的Meta类的list_serializer_class
+class V2BookListSerializer(ListSerializer):
+    def update(self, instance, validated_data):
+        print(instance)  # 要更新的对象们
+        print(validated_data)  # 要更新的对象对应的数据们
+        print(self.child)  # 服务的模型序列化类 - V2BookModelSerializers
+        for index, obj in enumerate(instance):
+            self.child.update(obj, validated_data[index])
+        return instance
+
 class V2BookModelSerializers(ModelSerializer):
 
     class Meta:
@@ -187,6 +199,9 @@ class V2BookModelSerializers(ModelSerializer):
                 'read_only': True
             }
         }
+
+        # 群改，需要设置 自定义ListSerializer，重写群改的update方法
+        list_serializer_class = V2BookListSerializer
 
     def validate_name(self, value):
         # 重复的书名判断
